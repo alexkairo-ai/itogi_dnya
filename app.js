@@ -181,10 +181,6 @@ function renderAdminModal() {
   });
 }
 
-function closeAdminModal() {
-  adminModal.style.display = 'none';
-}
-
 async function saveTotals() {
   const date = reportDateInput.value;
   const employee = employeeSelect.value;
@@ -322,7 +318,14 @@ async function loadReports() {
     st.totalAmount += row.totalAmount;
   }
 
-  const stageNames = { pila:'Пила', kromka:'Кромка', prisadka:'Присадка', upakovka:'Упаковка', hdf:'Пила ХДФ' };
+  const stageNames = {
+    pila: 'Пила',
+    kromka: 'Кромка',
+    prisadka: 'Присадка',
+    upakovka: 'Упаковка',
+    upakovka_hdf: 'Упаковка ХДФ',
+    hdf: 'Пила ХДФ'
+  };
 
   let html = '<table class="matrix-table"><thead><tr>';
   html += '<th>Этап / Сотрудник</th><th>Показатель</th>';
@@ -357,7 +360,7 @@ async function loadReports() {
     html += `<\/tr>`;
   }
 
-  html += '</tbody></table>';
+  html += '</tbody><tr>';
   matrixContainer.innerHTML = html;
   setLoading(false);
 }
@@ -554,7 +557,14 @@ async function exportToExcel() {
     const st = stageTotals.get(row.stage);
     st.totalCount += row.totalCount; st.totalAmount += row.totalAmount;
   }
-  const stageNames = { pila:'Пила', kromka:'Кромка', prisadka:'Присадка', upakovka:'Упаковка', hdf:'Пила ХДФ' };
+  const stageNames = {
+    pila: 'Пила',
+    kromka: 'Кромка',
+    prisadka: 'Присадка',
+    upakovka: 'Упаковка',
+    upakovka_hdf: 'Упаковка ХДФ',
+    hdf: 'Пила ХДФ'
+  };
   const monthYear = fromDateStr === toDateStr ? fromDateStr : `${fromDateStr} — ${toDateStr}`;
 
   let html = `
@@ -580,11 +590,11 @@ async function exportToExcel() {
             <th>Этап / Сотрудник</th>
             <th>Показатель</th>`;
   for (const d of days) {
-    html += `<th style="mso-number-format:'@';">${formatHeader(d)}</th>`;
+    html += `<th>${formatHeader(d)}</th>`;
   }
   html += `<th>Итого</th>`;
-  html += `</tr>`;
-  html += `</thead><tbody>`;
+  html += `</tr></thead>
+        <tbody>`;
 
   for (const row of rows) {
     const stageDisplay = stageNames[row.stage] || row.stage;
@@ -592,31 +602,31 @@ async function exportToExcel() {
     html += `<td class="row-sub-label">кол-во<\/td>`;
     for (const d of days) {
       const val = row.daysMap[d];
-      html += `<td class="count-cell" style="mso-number-format:'@';">${val.count === 0 ? '' : val.count}<\/td>`;
+      html += `<td class="count-cell">${val.count === 0 ? '' : val.count}<\/td>`;
     }
-    html += `<td class="count-cell" style="mso-number-format:'@';">${row.totalCount === 0 ? '' : row.totalCount}<\/td>`;
+    html += `<td class="count-cell">${row.totalCount === 0 ? '' : row.totalCount}<\/td>`;
     html += `<\/tr>`;
     html += `<tr><td class="row-sub-label">метраж<\/td>`;
     for (const d of days) {
       const val = row.daysMap[d];
-      html += `<td class="amount-cell" style="mso-number-format:'@';">${val.amount === 0 ? '' : val.amount}<\/td>`;
+      html += `<td class="amount-cell">${val.amount === 0 ? '' : val.amount}<\/td>`;
     }
-    html += `<td class="amount-cell" style="mso-number-format:'@';">${row.totalAmount === 0 ? '' : row.totalAmount}<\/td>`;
+    html += `<td class="amount-cell">${row.totalAmount === 0 ? '' : row.totalAmount}<\/td>`;
     html += `<\/tr>`;
   }
 
   for (const [stageKey, totals] of stageTotals.entries()) {
     const stageDisplay = stageNames[stageKey] || stageKey;
     const totalText = `${totals.totalCount === 0 ? '' : totals.totalCount} / ${totals.totalAmount === 0 ? '' : totals.totalAmount}`;
-    html += `<tr><td colspan="2" class="row-label" style="background:#e9ecef;">${stageDisplay} (всего)<\/td>`;
+    html += `｜｜DSML｜｜<td colspan="2" class="row-label" style="background:#e9ecef;">${stageDisplay} (всего)<\/td>`;
     for (let i = 0; i < days.length; i++) {
-      html += `<td style="mso-number-format:'@';"><\/td>`;
+      html += `<td><\/td>`;
     }
-    html += `<td class="count-cell" style="mso-number-format:'@';">${totalText}<\/td>`;
+    html += `<td class="count-cell">${totalText}<\/td>`;
     html += `<\/tr>`;
   }
 
-  html += `</tbody>嗷</table></body></html>`;
+  html += `</tbody></table></body></html>`;
 
   const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
   const link = document.createElement('a');
@@ -651,7 +661,7 @@ const adminPasswordModal = document.getElementById('adminPasswordModal');
 const adminPasswordInput = document.getElementById('adminPasswordInput');
 const submitAdminPasswordBtn = document.getElementById('submitAdminPasswordBtn');
 const cancelAdminPasswordBtn = document.getElementById('cancelAdminPasswordBtn');
-const closeAdminModalBtn = document.querySelector('.close-admin-modal');
+const closeAdminModal = document.querySelector('.close-admin-modal');
 const adminPasswordError = document.getElementById('adminPasswordError');
 
 function closeAdminPasswordModal() {
@@ -665,7 +675,6 @@ function showAdminPasswordModal() {
   adminPasswordInput.focus();
 }
 
-// Обработчик кнопки "Управление сотрудниками"
 adminBtn.addEventListener('click', () => {
   if (adminAuthenticated) {
     renderAdminModal();
@@ -676,7 +685,6 @@ adminBtn.addEventListener('click', () => {
   }
 });
 
-// Обработчик чекбокса "Режим администратора"
 adminModeCheckbox.addEventListener('change', (e) => {
   if (e.target.checked) {
     if (!adminAuthenticated) {
@@ -686,7 +694,6 @@ adminModeCheckbox.addEventListener('change', (e) => {
   }
 });
 
-// Проверка пароля
 submitAdminPasswordBtn.addEventListener('click', () => {
   const enteredPassword = adminPasswordInput.value;
   if (enteredPassword === ADMIN_PASSWORD) {
@@ -707,16 +714,13 @@ submitAdminPasswordBtn.addEventListener('click', () => {
 });
 
 cancelAdminPasswordBtn.addEventListener('click', closeAdminPasswordModal);
-if (closeAdminModalBtn) {
-  closeAdminModalBtn.addEventListener('click', closeAdminPasswordModal);
-}
+closeAdminModal.addEventListener('click', closeAdminPasswordModal);
 window.addEventListener('click', (e) => {
   if (e.target === adminPasswordModal) closeAdminPasswordModal();
 });
 
 adminBtn._pendingOpen = false;
 
-// ========== ОСТАЛЬНЫЕ ОБРАБОТЧИКИ ==========
 document.addEventListener('DOMContentLoaded', async () => {
   await loadEmployeesList();
   await migrateLinks();
@@ -725,46 +729,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   exportExcelBtn.addEventListener('click', exportToExcel);
   tabInput.addEventListener('click', () => switchTab('input'));
   tabReports.addEventListener('click', () => switchTab('reports'));
-  
-  // ========== ОБРАБОТЧИКИ ДЛЯ АДМИН-МОДАЛЬНОГО ОКНА ==========
-  // Закрытие модального окна
-  if (closeModal) {
-    closeModal.addEventListener('click', closeAdminModal);
-  }
-  
-  // Закрытие при клике вне окна
-  window.addEventListener('click', (e) => {
-    if (e.target === adminModal) {
-      closeAdminModal();
-    }
-  });
-  
-  // Кнопка добавления сотрудника
-  if (addEmployeeBtn) {
-    addEmployeeBtn.addEventListener('click', () => {
-      const newName = newEmployeeName.value.trim();
-      if (newName) {
-        addEmployee(newName);
-        newEmployeeName.value = '';
-      } else {
-        alert('Введите имя сотрудника');
-      }
-    });
-  }
-  
-  // Кнопка сброса списка сотрудников
-  if (resetEmployeesBtn) {
-    resetEmployeesBtn.addEventListener('click', resetToDefaultEmployees);
-  }
-  
-  // Обработчик нажатия Enter в поле ввода
-  if (newEmployeeName) {
-    newEmployeeName.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        addEmployeeBtn.click();
-      }
-    });
-  }
 });
 
 if ('serviceWorker' in navigator) {
