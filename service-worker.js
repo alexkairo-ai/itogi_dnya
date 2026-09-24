@@ -1,4 +1,4 @@
-const CACHE_NAME = 'itogi-dnya-v5';
+const CACHE_NAME = 'itogi-dnya-v6';
 const urlsToCache = [
   './',
   './index.html',
