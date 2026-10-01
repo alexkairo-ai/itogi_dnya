@@ -100,10 +100,23 @@ async function saveEmployeesList() {
 }
 
 async function addEmployee(name) {
-  if (!name.trim()) return;
+  console.log('addEmployee вызвана с именем:', name);
+  if (!name.trim()) { alert('Введите имя'); return; }
   if (currentEmployees.includes(name.trim())) { alert('Такое имя уже есть'); return; }
+
   currentEmployees.push(name.trim());
-  await saveEmployeesList();
+  console.log('Список после добавления:', currentEmployees);
+
+  try {
+    await saveEmployeesList();
+    console.log('Список сохранён в Firebase');
+  } catch (err) {
+    console.error('Ошибка сохранения в Firebase:', err);
+    alert('Ошибка записи в Firebase: ' + err.message);
+    currentEmployees = currentEmployees.filter(emp => emp !== name.trim());
+    return;
+  }
+
   populateEmployeeSelects();
   renderAdminModal();
   alert('Сотрудник добавлен');
@@ -360,7 +373,7 @@ async function loadReports() {
     html += `<\/tr>`;
   }
 
-  html += '</tbody><tr>';
+  html += '</tbody></table>';
   matrixContainer.innerHTML = html;
   setLoading(false);
 }
@@ -618,7 +631,7 @@ async function exportToExcel() {
   for (const [stageKey, totals] of stageTotals.entries()) {
     const stageDisplay = stageNames[stageKey] || stageKey;
     const totalText = `${totals.totalCount === 0 ? '' : totals.totalCount} / ${totals.totalAmount === 0 ? '' : totals.totalAmount}`;
-    html += `｜｜DSML｜｜<td colspan="2" class="row-label" style="background:#e9ecef;">${stageDisplay} (всего)<\/td>`;
+    html += `<tr><td colspan="2" class="row-label" style="background:#e9ecef;">${stageDisplay} (всего)<\/td>`;
     for (let i = 0; i < days.length; i++) {
       html += `<td><\/td>`;
     }
@@ -721,6 +734,29 @@ window.addEventListener('click', (e) => {
 
 adminBtn._pendingOpen = false;
 
+// ========== ОБРАБОТЧИКИ КНОПОК В МОДАЛЬНОМ ОКНЕ "УПРАВЛЕНИЕ СОТРУДНИКАМИ" ==========
+// ← ЭТО БЫЛО ПРОПУЩЕНО, ПОЭТОМУ КНОПКИ НЕ РАБОТАЛИ!
+addEmployeeBtn.addEventListener('click', () => {
+  const name = newEmployeeName.value.trim();
+  if (name) {
+    addEmployee(name);
+    newEmployeeName.value = '';
+  } else {
+    alert('Введите имя');
+  }
+});
+
+resetEmployeesBtn.addEventListener('click', resetToDefaultEmployees);
+
+closeModal.addEventListener('click', () => {
+  adminModal.style.display = 'none';
+});
+
+window.addEventListener('click', (e) => {
+  if (e.target === adminModal) adminModal.style.display = 'none';
+});
+
+// ========== ИНИЦИАЛИЗАЦИЯ ==========
 document.addEventListener('DOMContentLoaded', async () => {
   await loadEmployeesList();
   await migrateLinks();
